@@ -48,6 +48,10 @@ The installer will:
 1. System Requirements:
    - Linux/Unix system with sudo access
    - Curl installed (`sudo apt-get install curl`)
+   - For SQLite (if chosen):
+     ```bash
+     sudo apt-get install sqlite3 php-sqlite3
+     ```
 
 2. The installer will automatically set up:
    - PHP 8.4 and extensions

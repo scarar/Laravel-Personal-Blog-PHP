@@ -88,8 +88,12 @@ read -p "Enter choice [1-3]: " DB_CHOICE
 case $DB_CHOICE in
     1)
         DB_CONNECTION="sqlite"
-        echo -e "\nUsing SQLite database..."
+        echo -e "\nInstalling SQLite..."
+        sudo apt-get update
+        sudo apt-get install -y sqlite3 php-sqlite3
+        echo -e "\nCreating SQLite database..."
         touch database/database.sqlite
+        sudo chmod 777 database/database.sqlite
         ;;
     2)
         DB_CONNECTION="mysql"
