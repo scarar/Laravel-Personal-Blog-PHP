@@ -148,7 +148,9 @@ esac
 echo -e "\n${GREEN}Setting up Laravel application...${NC}"
 
 # Basic setup
-export COMPOSER_ALLOW_SUPERUSER=1
+if ask_yes_no "Composer plugins have been disabled for safety in this non-interactive session. Would you like to allow plugins to run as root/super user?"; then
+    export COMPOSER_ALLOW_SUPERUSER=1
+fi
 cp .env.example .env
 composer install --no-interaction
 
