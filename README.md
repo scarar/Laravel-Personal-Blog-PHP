@@ -15,21 +15,26 @@ sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/scarar/Laravel-Pers
 - Configure permissions
 - Create directories
 
-The installer will:
-1. Ask where you want to install the blog
-2. Download everything needed
-3. Guide you through a simple setup:
-   - Choosing your environment (local development or production)
-   - Selecting your database (SQLite, MySQL, or PostgreSQL)
-   - Setting up domain (optional)
-   - Configuring HTTPS/SSL (optional)
-   - Setting proper permissions
-   - Optimizing for performance
+The smart installer will:
+1. Check your system requirements
+2. Ask where you want to install the blog
+3. Guide you through setup:
+   - Choose environment (local or production)
+   - Select database (SQLite, MySQL, PostgreSQL)
+   - Configure for your needs
 
-💡 Quick Tip: For local testing, just choose:
-   1. "Local development" when asked
-   2. "SQLite" as your database
-   And you're ready to go!
+💡 Quick Start (Local Development):
+1. Choose "Local development"
+2. Select "SQLite" database
+3. Run `./start-server.sh`
+And you're ready to go!
+
+🔧 Features:
+- Smart detection of installed packages
+- Asks before installing anything new
+- Built-in PHP server for local development
+- No nginx needed for localhost
+- Automatic permission handling
 
 ## Features
 
