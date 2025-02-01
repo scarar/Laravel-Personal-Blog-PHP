@@ -31,14 +31,14 @@ A professional blog application built with Laravel, featuring user authenticatio
 
 2. Install dependencies:
    ```bash
-   composer install
-   npm install
+   sudo composer install
+   # Note: npm is not required for basic deployment
    ```
 
 3. Configure environment:
    ```bash
-   cp .env.example .env
-   php artisan key:generate
+   sudo cp .env.example .env
+   sudo php artisan key:generate
    ```
 
 4. Set up database in `.env`:
@@ -53,12 +53,12 @@ A professional blog application built with Laravel, featuring user authenticatio
 
 5. Run migrations:
    ```bash
-   php artisan migrate
+   sudo php artisan migrate
    ```
 
 6. Create storage link:
    ```bash
-   php artisan storage:link
+   sudo php artisan storage:link
    ```
 
 7. Build Assets for Production:
@@ -120,20 +120,21 @@ server {
 1. Prepare Production Environment:
    ```bash
    # Install dependencies
-   composer install --optimize-autoloader --no-dev
-   npm install
-   npm run build
+   sudo composer install --optimize-autoloader --no-dev
 
    # Set proper permissions
-   chown -R www-data:www-data storage bootstrap/cache
-   chmod -R 775 storage bootstrap/cache
+   sudo chown -R www-data:www-data /path/to/laravel-blog
+   sudo find /path/to/laravel-blog -type f -exec chmod 644 {} \;
+   sudo find /path/to/laravel-blog -type d -exec chmod 755 {} \;
+   sudo chmod -R 775 /path/to/laravel-blog/storage
+   sudo chmod -R 775 /path/to/laravel-blog/bootstrap/cache
    ```
 
 2. Configure Production Environment:
    ```bash
    # Set up environment file
-   cp .env.example .env
-   php artisan key:generate
+   sudo cp .env.example .env
+   sudo php artisan key:generate
 
    # Update .env with production settings
    APP_ENV=production
@@ -143,24 +144,24 @@ server {
 
 3. Optimize Laravel:
    ```bash
-   php artisan config:cache
-   php artisan route:cache
-   php artisan view:cache
-   php artisan storage:link
+   sudo php artisan config:cache
+   sudo php artisan route:cache
+   sudo php artisan view:cache
+   sudo php artisan storage:link
    ```
 
 4. Database Setup:
    ```bash
-   php artisan migrate --force
+   sudo php artisan migrate --force
    ```
 
 ### 4. Security Measures
 
 1. File Permissions:
    ```bash
-   find /path/to/laravel-blog -type f -exec chmod 644 {} \;
-   find /path/to/laravel-blog -type d -exec chmod 755 {} \;
-   chmod -R ug+rwx storage bootstrap/cache
+   sudo find /path/to/laravel-blog -type f -exec chmod 644 {} \;
+   sudo find /path/to/laravel-blog -type d -exec chmod 755 {} \;
+   sudo chmod -R ug+rwx storage bootstrap/cache
    ```
 
 2. Secure Important Files:
@@ -184,43 +185,44 @@ server {
 
 1. Regular Updates:
    ```bash
-   composer update --no-dev
-   npm update
-   php artisan migrate
+   sudo composer update --no-dev
+   sudo php artisan migrate
    ```
 
 2. Cache Management:
    ```bash
-   php artisan cache:clear
-   php artisan config:clear
-   php artisan view:clear
+   sudo php artisan cache:clear
+   sudo php artisan config:clear
+   sudo php artisan view:clear
    ```
 
 3. Backup Strategy:
    ```bash
    # Database backup
-   mysqldump -u user -p database_name > backup.sql
+   sudo mysqldump -u user -p database_name > backup.sql
+   sudo chown $(whoami):$(whoami) backup.sql
 
    # Application backup
-   tar -czf backup.tar.gz /path/to/laravel-blog
+   sudo tar -czf backup.tar.gz /path/to/laravel-blog
+   sudo chown $(whoami):$(whoami) backup.tar.gz
    ```
 
 ## Monitoring and Logging
 
 1. Laravel Log Files:
    ```bash
-   tail -f storage/logs/laravel.log
+   sudo tail -f storage/logs/laravel.log
    ```
 
 2. Nginx Access/Error Logs:
    ```bash
-   tail -f /var/log/nginx/access.log
-   tail -f /var/log/nginx/error.log
+   sudo tail -f /var/log/nginx/access.log
+   sudo tail -f /var/log/nginx/error.log
    ```
 
 3. PHP-FPM Logs:
    ```bash
-   tail -f /var/log/php8.4-fpm.log
+   sudo tail -f /var/log/php8.4-fpm.log
    ```
 
 ## Troubleshooting
@@ -240,7 +242,7 @@ server {
 
 3. Composer Issues:
    ```bash
-   composer dump-autoload
+   sudo composer dump-autoload
    ```
 
 ## Contributing
