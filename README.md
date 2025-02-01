@@ -6,7 +6,7 @@ A modern, super easy-to-install blog application built with Laravel PHP framewor
 
 1. Open terminal and run this command (sudo password required):
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/scarar/Laravel-Personal-Blog-PHP/main/get-blog.sh)"
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/scarar/Laravel-Personal-Blog-PHP/main/scripts/get-blog.sh)"
 ```
 
 ⚠️ Note: This script needs sudo access to:
@@ -59,15 +59,22 @@ The installer will:
 
 No need to install anything manually - the installer handles everything!
 
-## Configuration Files
+## Project Structure
 
-The installer uses pre-configured templates for:
-- Nginx HTTP configuration
-- Nginx HTTPS configuration
-- Database settings
-- SSL/TLS settings
+```
+Laravel-Personal-Blog-PHP/
+├── config/             # Configuration templates
+│   ├── nginx/         # Nginx server configs
+│   └── ...           # Other config templates
+├── scripts/           # Installation & maintenance scripts
+│   ├── get-blog.sh   # One-command installer
+│   ├── install.sh    # Main installation script
+│   ├── backup.sh     # Backup utility
+│   └── ...          # Other utilities
+└── ... Laravel application files
+```
 
-All configuration templates are in the `config` directory.
+All configuration templates and scripts are included - no manual setup needed!
 
 ## Need Help?
 
