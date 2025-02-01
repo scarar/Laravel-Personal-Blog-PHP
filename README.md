@@ -70,7 +70,42 @@ A professional blog application built with Laravel, featuring user authenticatio
    # See "Production Deployment" section below for Nginx configuration
    ```
 
-## Production Deployment
+## Quick Deployment
+
+1. Clone the repository:
+   ```bash
+   cd /var/www/html
+   sudo git clone https://github.com/scarar/Laravel-Personal-Blog-PHP.git blog
+   cd blog
+   ```
+
+2. Run the deployment script:
+   ```bash
+   sudo chmod +x deploy.sh
+   sudo ./deploy.sh
+   ```
+
+3. Configure Nginx:
+   ```bash
+   sudo cp nginx.conf.example /etc/nginx/sites-available/blog
+   sudo ln -s /etc/nginx/sites-available/blog /etc/nginx/sites-enabled/
+   sudo nginx -t && sudo systemctl restart nginx
+   ```
+
+4. Set up SSL:
+   ```bash
+   sudo certbot --nginx -d your-domain.com
+   ```
+
+5. Set up backups:
+   ```bash
+   sudo chmod +x backup.sh
+   sudo cp backup.sh /usr/local/bin/blog-backup
+   sudo crontab -e
+   # Add: 0 2 * * * /usr/local/bin/blog-backup
+   ```
+
+## Detailed Deployment
 
 ### 1. Server Requirements
 
