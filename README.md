@@ -72,34 +72,41 @@ A professional blog application built with Laravel, featuring user authenticatio
 
 ## Quick Deployment
 
-1. Clone the repository:
+1. Clone the repository wherever you want to install it:
    ```bash
-   cd /var/www/html
-   sudo git clone https://github.com/scarar/Laravel-Personal-Blog-PHP.git blog
+   # Clone to your desired location
+   git clone https://github.com/scarar/Laravel-Personal-Blog-PHP.git blog
    cd blog
    ```
 
-2. Run the deployment script:
+2. Run the setup script:
    ```bash
-   sudo chmod +x deploy.sh
-   sudo ./deploy.sh
+   chmod +x setup.sh
+   ./setup.sh
    ```
+   The setup script will:
+   - Configure Nginx for your specific installation directory
+   - Set up your environment file
+   - Install dependencies
+   - Set proper permissions
+   - Create storage link
+   - Run database migrations
+   - Optimize Laravel for production
 
-3. Configure Nginx:
-   ```bash
-   sudo cp nginx.conf.example /etc/nginx/sites-available/blog
-   sudo ln -s /etc/nginx/sites-available/blog /etc/nginx/sites-enabled/
-   sudo nginx -t && sudo systemctl restart nginx
-   ```
-
-4. Set up SSL:
+3. Set up SSL (after pointing your domain to the server):
    ```bash
    sudo certbot --nginx -d your-domain.com
    ```
 
-5. Set up backups:
+4. Start using your blog:
    ```bash
-   sudo chmod +x backup.sh
+   # Restart Nginx to apply changes
+   sudo systemctl restart nginx
+   ```
+
+5. (Optional) Set up automatic backups:
+   ```bash
+   chmod +x backup.sh
    sudo cp backup.sh /usr/local/bin/blog-backup
    sudo crontab -e
    # Add: 0 2 * * * /usr/local/bin/blog-backup

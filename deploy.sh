@@ -4,7 +4,7 @@
 set -e
 
 # Configuration
-APP_DIR="/var/www/html/blog"
+APP_DIR="$(pwd)"  # Use current directory
 BACKUP_DIR="/var/backups/blog"
 TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
 
