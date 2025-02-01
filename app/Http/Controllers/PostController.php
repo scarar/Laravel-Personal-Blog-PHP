@@ -20,12 +20,16 @@ class PostController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-    public function index(): View
+    public function index(): View|\Illuminate\Http\Response
     {
         $posts = Post::with('user')
             ->where('published', true)
             ->orderBy('published_at', 'desc')
             ->paginate(10);
+        
+        if (request()->method() === 'HEAD') {
+            return response()->view('posts.index', compact('posts'))->header('Content-Length', '0');
+        }
         
         return view('posts.index', compact('posts'));
     }
