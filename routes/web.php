@@ -7,7 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 
 // Basic routes
-Route::get('/', [PostController::class, 'index']);
+Route::any('/', [PostController::class, 'index']);
 Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Authentication Routes

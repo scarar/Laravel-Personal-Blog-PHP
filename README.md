@@ -76,6 +76,52 @@ Laravel-Personal-Blog-PHP/
 
 All configuration templates and scripts are included - no manual setup needed!
 
+## Maintenance Commands
+
+All commands need to be run with sudo:
+
+1. Update the installation:
+```bash
+# Pull latest changes
+sudo git pull origin main
+
+# Update dependencies
+sudo composer install
+
+# Clear caches
+sudo php artisan optimize:clear
+
+# Rebuild caches
+sudo php artisan optimize
+```
+
+2. Common tasks:
+```bash
+# View routes
+sudo php artisan route:list
+
+# Clear specific caches
+sudo php artisan cache:clear
+sudo php artisan config:clear
+sudo php artisan route:clear
+sudo php artisan view:clear
+
+# Create storage link
+sudo php artisan storage:link
+```
+
+3. Database commands:
+```bash
+# Run migrations
+sudo php artisan migrate
+
+# Rollback migrations
+sudo php artisan migrate:rollback
+
+# Fresh install (caution: deletes data)
+sudo php artisan migrate:fresh
+```
+
 ## Need Help?
 
 For support, please create an issue in the GitHub repository.
