@@ -22,6 +22,7 @@
                         <a href="{{ route('login') }}" class="py-2 px-4 text-gray-500 hover:text-gray-700">Login</a>
                         <a href="{{ route('register') }}" class="py-2 px-4 bg-blue-500 text-white rounded hover:bg-blue-600">Register</a>
                     @else
+                        <a href="{{ route('dashboard') }}" class="py-2 px-4 text-gray-500 hover:text-gray-700">Dashboard</a>
                         <a href="{{ route('posts.create') }}" class="py-2 px-4 bg-green-500 text-white rounded hover:bg-green-600">New Post</a>
                         <form method="POST" action="{{ route('logout') }}">
                             @csrf

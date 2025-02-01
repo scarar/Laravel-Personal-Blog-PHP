@@ -22,6 +22,10 @@ class Post extends Model
         'user_id'
     ];
 
+    protected $attributes = [
+        'published' => false
+    ];
+
     protected $casts = [
         'published' => 'boolean',
         'published_at' => 'datetime'
