@@ -48,6 +48,8 @@ fi
 
 # 1. Domain Name
 read -p "Enter your domain name (e.g., myblog.com or onion address): " DOMAIN_NAME
+read -p "Enter the port number to use (default 80): " PORT_NUMBER
+PORT_NUMBER=
 IS_LOCAL=false
 
 # 2. Check and Install Requirements
@@ -221,7 +223,8 @@ else
         # Create Nginx configuration
         cat <<EOL > "/etc/nginx/sites-available/$DOMAIN_NAME"
 server {
-    listen 80;
+    listen ${PORT_NUMBER:-80} default_server;
+    listen [::]:${PORT_NUMBER:-80} default_server;
     server_name $DOMAIN_NAME;
 
     root $WEBSITE_PATH/public;
