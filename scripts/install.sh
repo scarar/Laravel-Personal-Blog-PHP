@@ -230,11 +230,35 @@ else
     
     # Configure Nginx only if installed
     if command_exists nginx; then
-        # Use template from config/nginx
-        cp config/nginx/http.conf.template "/etc/nginx/sites-available/$DOMAIN_NAME"
-        sed -i "s|{{domain}}|$DOMAIN_NAME|g" "/etc/nginx/sites-available/$DOMAIN_NAME"
-        sed -i "s|{{path}}|$PWD|g" "/etc/nginx/sites-available/$DOMAIN_NAME"
+        echo "Enter the path where you want to place the built website (e.g., /var/www/myblog):"
+        read -p "Path: " WEBSITE_PATH
         
+        # Create Nginx configuration
+        cat <<EOL > "/etc/nginx/sites-available/$DOMAIN_NAME"
+server {
+    listen 80;
+    server_name $DOMAIN_NAME;
+
+    root $WEBSITE_PATH/public;
+    index index.php index.html index.htm;
+
+    location / {
+        try_files \$uri \$uri/ /index.php?\$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+
+    location ~ /\.ht {
+        deny all;
+    }
+}
+EOL
+
         # Enable the site
         ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
         
