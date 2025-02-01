@@ -18,7 +18,12 @@ A modern, easy-to-install blog application built with Laravel PHP framework.
 
 3. Follow the on-screen instructions
 
-That's it! The installer will guide you through the rest.
+That's it! The installer will guide you through:
+- Choosing your database (SQLite, MySQL, or PostgreSQL)
+- Setting up your domain
+- Configuring HTTPS/SSL
+- Setting proper permissions
+- Optimizing for production
 
 ## Features
 
@@ -29,12 +34,27 @@ That's it! The installer will guide you through the rest.
 - 🖼️ Image upload support
 - 🔍 SEO friendly URLs
 - ⚡ Fast and optimized
+- 💾 Multiple database support
+- 🔐 Easy SSL setup
 
 ## Requirements
 
 - PHP 8.4
-- MySQL or PostgreSQL database
-- Nginx web server
+- Web server (Nginx recommended)
+- One of these databases:
+  - SQLite (simplest, good for small blogs)
+  - MySQL (good for medium to large blogs)
+  - PostgreSQL (advanced features)
+
+## Configuration Files
+
+The installer uses pre-configured templates for:
+- Nginx HTTP configuration
+- Nginx HTTPS configuration
+- Database settings
+- SSL/TLS settings
+
+All configuration templates are in the `config` directory.
 
 ## Need Help?
 

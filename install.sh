@@ -3,11 +3,52 @@
 # Colors for better readability
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
+YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
+
+# Function to check if a command exists
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
+}
 
 clear
 echo -e "${BLUE}Laravel Blog Installer${NC}"
 echo "====================="
+echo
+
+# Check requirements
+echo -e "${GREEN}Checking requirements...${NC}"
+REQUIREMENTS_MET=true
+
+if ! command_exists php; then
+    echo -e "${RED}✗ PHP is not installed${NC}"
+    REQUIREMENTS_MET=false
+fi
+
+if ! command_exists composer; then
+    echo -e "${RED}✗ Composer is not installed${NC}"
+    REQUIREMENTS_MET=false
+fi
+
+if ! command_exists nginx; then
+    echo -e "${YELLOW}⚠ Nginx is not installed${NC}"
+    echo "Would you like to install Nginx? (y/n)"
+    read -p "Choice: " INSTALL_NGINX
+    if [ "$INSTALL_NGINX" = "y" ]; then
+        sudo apt-get update
+        sudo apt-get install -y nginx
+    else
+        echo -e "${YELLOW}⚠ Skipping Nginx installation${NC}"
+    fi
+fi
+
+if [ "$REQUIREMENTS_MET" = false ]; then
+    echo -e "${RED}Please install the missing requirements and try again.${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✓ All requirements met${NC}"
 echo
 
 # 1. Ask for domain name
@@ -16,32 +57,77 @@ echo "Example: myblog.com"
 read -p "Domain: " DOMAIN_NAME
 echo
 
-# 2. Ask for database info
-echo -e "${GREEN}Step 2:${NC} Database setup"
-read -p "Database name (example: blog): " DB_NAME
-read -p "Database username: " DB_USER
-read -p "Database password: " DB_PASS
-echo
+# 2. Database Selection
+echo -e "${GREEN}Step 2:${NC} Choose your database:"
+echo "1) SQLite (Simplest, good for small blogs)"
+echo "2) MySQL (Good for medium to large blogs)"
+echo "3) PostgreSQL (Advanced features, good for large blogs)"
+read -p "Enter choice [1-3]: " DB_CHOICE
 
-# 3. Start installation
-echo -e "${GREEN}Starting installation...${NC}"
-echo "This might take a few minutes..."
-echo
+case $DB_CHOICE in
+    1)
+        DB_CONNECTION="sqlite"
+        echo -e "\nUsing SQLite database..."
+        touch database/database.sqlite
+        ;;
+    2)
+        DB_CONNECTION="mysql"
+        echo -e "\nMySQL database setup:"
+        read -p "Database name (example: blog): " DB_NAME
+        read -p "Database username: " DB_USER
+        read -p "Database password: " DB_PASS
+        ;;
+    3)
+        DB_CONNECTION="pgsql"
+        echo -e "\nPostgreSQL database setup:"
+        read -p "Database name (example: blog): " DB_NAME
+        read -p "Database username: " DB_USER
+        read -p "Database password: " DB_PASS
+        ;;
+    *)
+        echo -e "${YELLOW}Invalid choice. Using SQLite as default.${NC}"
+        DB_CONNECTION="sqlite"
+        touch database/database.sqlite
+        ;;
+esac
+
+# 3. Ask about SSL
+echo -e "\n${GREEN}Step 3:${NC} Do you want to set up HTTPS/SSL? (y/n)"
+read -p "Choice: " USE_SSL
 
 # Get current directory
 CURRENT_DIR=$(pwd)
+
+echo
+echo -e "${GREEN}Starting installation...${NC}"
+echo "This might take a few minutes..."
+echo
 
 # Basic setup
 echo "→ Setting up Laravel..."
 cp .env.example .env
 composer install --quiet
-php artisan key:generate --quiet
 
-# Update .env file
+# Update .env file based on database choice
 sed -i "s|APP_URL=.*|APP_URL=https://$DOMAIN_NAME|" .env
-sed -i "s|DB_DATABASE=.*|DB_DATABASE=$DB_NAME|" .env
-sed -i "s|DB_USERNAME=.*|DB_USERNAME=$DB_USER|" .env
-sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" .env
+sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=$DB_CONNECTION|" .env
+
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+    # Configure for SQLite
+    sed -i "s|DB_HOST=.*|DB_HOST=|" .env
+    sed -i "s|DB_PORT=.*|DB_PORT=|" .env
+    sed -i "s|DB_DATABASE=.*|DB_DATABASE=$CURRENT_DIR/database/database.sqlite|" .env
+    sed -i "s|DB_USERNAME=.*|DB_USERNAME=|" .env
+    sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=|" .env
+else
+    # Configure for MySQL/PostgreSQL
+    sed -i "s|DB_DATABASE=.*|DB_DATABASE=$DB_NAME|" .env
+    sed -i "s|DB_USERNAME=.*|DB_USERNAME=$DB_USER|" .env
+    sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=$DB_PASS|" .env
+fi
+
+# Generate application key
+php artisan key:generate --quiet
 
 # Set up database
 echo "→ Setting up database..."
@@ -60,37 +146,28 @@ sudo chmod -R 775 storage bootstrap/cache
 
 # Configure Nginx
 echo "→ Setting up Nginx..."
-sudo tee /etc/nginx/sites-available/$DOMAIN_NAME > /dev/null << EOF
-server {
-    listen 80;
-    listen [::]:80;
-    server_name $DOMAIN_NAME;
-    root $CURRENT_DIR/public;
 
-    index index.php;
-    charset utf-8;
+# Choose template based on SSL preference
+if [ "$USE_SSL" = "y" ]; then
+    TEMPLATE="config/nginx/https.conf.template"
+else
+    TEMPLATE="config/nginx/http.conf.template"
+fi
 
-    location / {
-        try_files \$uri \$uri/ /index.php?\$query_string;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
-}
-EOF
+# Replace placeholders in template
+sed "s|{{domain}}|$DOMAIN_NAME|g; s|{{path}}|$CURRENT_DIR|g" "$TEMPLATE" | \
+    sudo tee "/etc/nginx/sites-available/$DOMAIN_NAME" > /dev/null
 
 # Enable the site
-sudo ln -sf /etc/nginx/sites-available/$DOMAIN_NAME /etc/nginx/sites-enabled/
+sudo ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
 
 # Test and restart Nginx
-sudo nginx -t && sudo systemctl restart nginx
+if sudo nginx -t; then
+    sudo systemctl restart nginx
+    echo -e "${GREEN}✓ Nginx configuration successful${NC}"
+else
+    echo -e "${RED}✗ Nginx configuration failed. Please check the error above.${NC}"
+fi
 
 # Optimize Laravel
 echo "→ Optimizing Laravel..."
@@ -102,10 +179,30 @@ php artisan view:cache --quiet
 echo
 echo -e "${GREEN}Installation complete!${NC}"
 echo
-echo "Next steps:"
-echo "1. Point your domain ($DOMAIN_NAME) to this server"
-echo "2. Install SSL certificate by running:"
-echo "   sudo certbot --nginx -d $DOMAIN_NAME"
+echo "Your blog has been installed with:"
+echo -e "• Database: ${BLUE}$DB_CONNECTION${NC}"
+if [ "$DB_CONNECTION" = "sqlite" ]; then
+    echo -e "• Database location: ${BLUE}$CURRENT_DIR/database/database.sqlite${NC}"
+else
+    echo -e "• Database name: ${BLUE}$DB_NAME${NC}"
+fi
+echo -e "• Web root: ${BLUE}$CURRENT_DIR${NC}"
+echo -e "• Nginx config: ${BLUE}/etc/nginx/sites-available/$DOMAIN_NAME${NC}"
 echo
-echo -e "${BLUE}Your blog is installed at: $CURRENT_DIR${NC}"
-echo "Thank you for using Laravel Blog!"
+
+if [ "$USE_SSL" = "y" ]; then
+    echo "Next steps:"
+    echo "1. Point your domain ($DOMAIN_NAME) to this server"
+    echo "2. Install SSL certificate by running:"
+    echo "   sudo certbot --nginx -d $DOMAIN_NAME"
+    echo
+    echo "To install certbot:"
+    echo "sudo apt-get update"
+    echo "sudo apt-get install -y certbot python3-certbot-nginx"
+else
+    echo "Your blog is now accessible at: http://$DOMAIN_NAME"
+    echo "To enable HTTPS later, run: sudo certbot --nginx -d $DOMAIN_NAME"
+fi
+
+echo
+echo -e "${BLUE}Thank you for using Laravel Blog!${NC}"
