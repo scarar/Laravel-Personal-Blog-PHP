@@ -10,8 +10,8 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\View\View;
 use Illuminate\Http\Response;
+use Illuminate\View\View;
 
 class PostController extends Controller
 {
@@ -81,7 +81,7 @@ class PostController extends Controller
             ->with('success', 'Post created successfully.');
     }
 
-    public function show(Post $post): View|Response
+    public function show(Post $post): View|\Illuminate\Http\Response
     {
         if (!$post->published && auth()->id() !== $post->user_id) {
             abort(404);
