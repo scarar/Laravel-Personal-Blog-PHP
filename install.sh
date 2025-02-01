@@ -51,10 +51,24 @@ fi
 echo -e "${GREEN}✓ All requirements met${NC}"
 echo
 
-# 1. Ask for domain name
-echo -e "${GREEN}Step 1:${NC} What's your domain name?"
-echo "Example: myblog.com"
-read -p "Domain: " DOMAIN_NAME
+# 1. Ask about environment
+echo -e "${GREEN}Step 1:${NC} Are you installing for:"
+echo "1) Local development (localhost)"
+echo "2) Production server (with domain)"
+read -p "Enter choice [1-2]: " ENV_CHOICE
+
+case $ENV_CHOICE in
+    2)
+        echo -e "\nEnter your domain name:"
+        echo "Example: myblog.com"
+        read -p "Domain: " DOMAIN_NAME
+        IS_LOCAL=false
+        ;;
+    *)
+        DOMAIN_NAME="localhost"
+        IS_LOCAL=true
+        ;;
+esac
 echo
 
 # 2. Database Selection
@@ -91,9 +105,14 @@ case $DB_CHOICE in
         ;;
 esac
 
-# 3. Ask about SSL
-echo -e "\n${GREEN}Step 3:${NC} Do you want to set up HTTPS/SSL? (y/n)"
-read -p "Choice: " USE_SSL
+# 3. Ask about SSL (skip for local development)
+if [ "$IS_LOCAL" = true ]; then
+    USE_SSL="n"
+    echo -e "\n${BLUE}Local development:${NC} Using HTTP for localhost"
+else
+    echo -e "\n${GREEN}Step 3:${NC} Do you want to set up HTTPS/SSL? (y/n)"
+    read -p "Choice: " USE_SSL
+fi
 
 # Get current directory
 CURRENT_DIR=$(pwd)
@@ -190,18 +209,30 @@ echo -e "• Web root: ${BLUE}$CURRENT_DIR${NC}"
 echo -e "• Nginx config: ${BLUE}/etc/nginx/sites-available/$DOMAIN_NAME${NC}"
 echo
 
-if [ "$USE_SSL" = "y" ]; then
-    echo "Next steps:"
-    echo "1. Point your domain ($DOMAIN_NAME) to this server"
-    echo "2. Install SSL certificate by running:"
-    echo "   sudo certbot --nginx -d $DOMAIN_NAME"
+if [ "$IS_LOCAL" = true ]; then
+    echo -e "${GREEN}Local Development Setup Complete!${NC}"
+    echo "Your blog is now accessible at: http://localhost"
     echo
-    echo "To install certbot:"
-    echo "sudo apt-get update"
-    echo "sudo apt-get install -y certbot python3-certbot-nginx"
+    echo "To start using your blog:"
+    echo "1. Make sure port 80 is available (stop other web servers if needed)"
+    echo "2. Visit http://localhost in your browser"
+    echo
+    echo "To stop the server later:"
+    echo "sudo systemctl stop nginx"
 else
-    echo "Your blog is now accessible at: http://$DOMAIN_NAME"
-    echo "To enable HTTPS later, run: sudo certbot --nginx -d $DOMAIN_NAME"
+    if [ "$USE_SSL" = "y" ]; then
+        echo "Next steps:"
+        echo "1. Point your domain ($DOMAIN_NAME) to this server"
+        echo "2. Install SSL certificate by running:"
+        echo "   sudo certbot --nginx -d $DOMAIN_NAME"
+        echo
+        echo "To install certbot:"
+        echo "sudo apt-get update"
+        echo "sudo apt-get install -y certbot python3-certbot-nginx"
+    else
+        echo "Your blog is now accessible at: http://$DOMAIN_NAME"
+        echo "To enable HTTPS later, run: sudo certbot --nginx -d $DOMAIN_NAME"
+    fi
 fi
 
 echo

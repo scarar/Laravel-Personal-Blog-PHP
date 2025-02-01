@@ -1,29 +1,29 @@
 # Laravel Personal Blog
 
-A modern, easy-to-install blog application built with Laravel PHP framework.
+A modern, super easy-to-install blog application built with Laravel PHP framework.
 
-## Quick Install (3 Steps)
+## Quick Install (One Command!)
 
-1. Clone this repository:
-   ```bash
-   git clone https://github.com/scarar/Laravel-Personal-Blog-PHP.git blog
-   cd blog
-   ```
+Download and run the installer with one command:
+```bash
+curl -s https://raw.githubusercontent.com/scarar/Laravel-Personal-Blog-PHP/main/get-blog.sh | sudo bash
+```
 
-2. Run the installer:
-   ```bash
-   chmod +x install.sh
-   ./install.sh
-   ```
+The installer will:
+1. Ask where you want to install the blog
+2. Download everything needed
+3. Guide you through a simple setup:
+   - Choosing your environment (local development or production)
+   - Selecting your database (SQLite, MySQL, or PostgreSQL)
+   - Setting up domain (optional)
+   - Configuring HTTPS/SSL (optional)
+   - Setting proper permissions
+   - Optimizing for performance
 
-3. Follow the on-screen instructions
-
-That's it! The installer will guide you through:
-- Choosing your database (SQLite, MySQL, or PostgreSQL)
-- Setting up your domain
-- Configuring HTTPS/SSL
-- Setting proper permissions
-- Optimizing for production
+💡 Quick Tip: For local testing, just choose:
+   1. "Local development" when asked
+   2. "SQLite" as your database
+   And you're ready to go!
 
 ## Features
 
