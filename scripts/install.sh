@@ -46,24 +46,9 @@ if [ "$EUID" -ne 0 ]; then
     exit 1
 fi
 
-# 1. Environment Selection
-echo -e "${GREEN}Step 1:${NC} Choose your environment:"
-echo "1) Local development (localhost)"
-echo "2) Production server (with domain)"
-read -p "Enter choice [1-2]: " ENV_CHOICE
-
-case $ENV_CHOICE in
-    2)
-        echo -e "\nEnter your domain name:"
-        echo "Example: myblog.com"
-        read -p "Domain: " DOMAIN_NAME
-        IS_LOCAL=false
-        ;;
-    *)
-        DOMAIN_NAME="localhost"
-        IS_LOCAL=true
-        ;;
-esac
+# 1. Domain Name
+read -p "Enter your domain name (e.g., myblog.com or onion address): " DOMAIN_NAME
+IS_LOCAL=false
 
 # 2. Check and Install Requirements
 echo -e "\n${GREEN}Checking requirements...${NC}"
