@@ -172,6 +172,8 @@ npm install
 npm run build
 
 # Update .env file
+sed -i "s|APP_ENV=.*|APP_ENV=production|" .env
+sed -i "s|APP_DEBUG=.*|APP_DEBUG=false|" .env
 sed -i "s|APP_URL=.*|APP_URL=http://$DOMAIN_NAME|" .env
 sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=$DB_CONNECTION|" .env
 
