@@ -56,5 +56,5 @@ sudo chown -R $USER:$USER "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
 # Make installer executable and run it
-chmod +x install.sh
-./install.sh
+chmod +x scripts/install.sh
+./scripts/install.sh
