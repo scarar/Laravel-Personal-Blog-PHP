@@ -61,10 +61,13 @@ A professional blog application built with Laravel, featuring user authenticatio
    php artisan storage:link
    ```
 
-7. Start development servers:
+7. Build Assets for Production:
    ```bash
-   php artisan serve
-   npm run dev
+   # Build and minify frontend assets
+   npm run build
+   
+   # Configure your web server (Nginx) to point to the /public directory
+   # See "Production Deployment" section below for Nginx configuration
    ```
 
 ## Production Deployment
