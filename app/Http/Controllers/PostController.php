@@ -20,7 +20,7 @@ class PostController extends Controller
         $this->middleware('auth')->except(['index', 'show']);
     }
 
-    public function index(): View|\Illuminate\Http\Response
+    public function index(): View|Response
     {
         $posts = Post::with('user')
             ->where('published', true)
@@ -28,7 +28,8 @@ class PostController extends Controller
             ->paginate(10);
         
         if (request()->method() === 'HEAD') {
-            return response()->view('posts.index', compact('posts'))->header('Content-Length', '0');
+            return response()->view('posts.index', compact('posts'))
+                ->header('Content-Length', '0');
         }
         
         return view('posts.index', compact('posts'));
@@ -77,11 +78,18 @@ class PostController extends Controller
             $post->save();
             DB::commit();
 
-        return redirect()->route('posts.show', $post)
-            ->with('success', 'Post created successfully.');
+            return redirect()->route('posts.show', $post)
+                ->with('success', 'Post created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to create post: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create post. Please try again.']);
+        }
     }
 
-    public function show(Post $post): View|\Illuminate\Http\Response
+    public function show(Post $post): View|Response
     {
         if (!$post->published && auth()->id() !== $post->user_id) {
             abort(404);
@@ -109,7 +117,6 @@ class PostController extends Controller
         try {
             DB::beginTransaction();
 
-            // Handle slug update if title changed
             if ($post->title !== $validated['title']) {
                 $slug = Str::slug($validated['title']);
                 $originalSlug = $slug;
@@ -123,7 +130,6 @@ class PostController extends Controller
 
             if ($request->hasFile('featured_image')) {
                 try {
-                    // Delete old image if exists
                     if ($post->featured_image) {
                         Storage::disk('public')->delete($post->featured_image);
                     }
@@ -141,8 +147,15 @@ class PostController extends Controller
             $post->update($validated);
             DB::commit();
 
-        return redirect()->route('posts.show', $post)
-            ->with('success', 'Post updated successfully.');
+            return redirect()->route('posts.show', $post)
+                ->with('success', 'Post updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Failed to update post: ' . $e->getMessage());
+            
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to update post. Please try again.']);
+        }
     }
 
     public function destroy(Post $post): RedirectResponse
@@ -152,7 +165,6 @@ class PostController extends Controller
         try {
             DB::beginTransaction();
 
-            // Delete featured image if exists
             if ($post->featured_image) {
                 try {
                     Storage::disk('public')->delete($post->featured_image);
@@ -172,5 +184,6 @@ class PostController extends Controller
             
             return redirect()->back()
                 ->withErrors(['error' => 'Failed to delete post. Please try again.']);
+        }
     }
 }
