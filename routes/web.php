@@ -4,27 +4,32 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\PostController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 
-// Public routes
-Route::match(['GET', 'HEAD'], '/', [PostController::class, 'index'])->name('home');
-Route::get('/posts', [PostController::class, 'index'])->name('posts.index');
-Route::get('/posts/{post}', [PostController::class, 'show'])->name('posts.show');
+// Basic routes
+Route::get('/', [PostController::class, 'index']);
+Route::get('/home', [HomeController::class, 'index'])->name('home');
 
 // Authentication Routes
 Auth::routes();
 
-// Protected routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-    
-    // Post management routes
-    Route::get('/posts/create', [PostController::class, 'create'])->name('posts.create');
-    Route::post('/posts', [PostController::class, 'store'])->name('posts.store');
-    Route::get('/posts/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
-    Route::put('/posts/{post}', [PostController::class, 'update'])->name('posts.update');
-    Route::delete('/posts/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+// Blog routes
+Route::prefix('posts')->group(function () {
+    // Public routes
+    Route::get('/', [PostController::class, 'index'])->name('posts.index');
+    Route::get('/{post}', [PostController::class, 'show'])->name('posts.show');
+
+    // Protected routes
+    Route::middleware(['auth'])->group(function () {
+        Route::get('/create', [PostController::class, 'create'])->name('posts.create');
+        Route::post('/', [PostController::class, 'store'])->name('posts.store');
+        Route::get('/{post}/edit', [PostController::class, 'edit'])->name('posts.edit');
+        Route::put('/{post}', [PostController::class, 'update'])->name('posts.update');
+        Route::delete('/{post}', [PostController::class, 'destroy'])->name('posts.destroy');
+    });
 });
 
-Auth::routes();
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
+// Dashboard (protected)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
