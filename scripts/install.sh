@@ -148,6 +148,7 @@ esac
 echo -e "\n${GREEN}Setting up Laravel application...${NC}"
 
 # Basic setup
+export COMPOSER_ALLOW_SUPERUSER=1
 cp .env.example .env
 composer install --no-interaction
 
