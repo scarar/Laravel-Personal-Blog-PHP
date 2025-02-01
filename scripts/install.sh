@@ -1,12 +1,5 @@
 #!/bin/bash
 
-# Check if script is run with sudo
-if [ "$EUID" -ne 0 ]; then 
-    echo "Please run with sudo:"
-    echo "sudo bash $0"
-    exit 1
-fi
-
 # Colors for better readability
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
@@ -19,47 +12,42 @@ command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
+# Function to check PHP version
+check_php_version() {
+    if command_exists php; then
+        PHP_VERSION=$(php -v | head -n 1 | cut -d " " -f 2 | cut -d "." -f 1,2)
+        echo $PHP_VERSION
+    else
+        echo "0"
+    fi
+}
+
+# Function to ask yes/no questions
+ask_yes_no() {
+    while true; do
+        read -p "$1 [y/n]: " yn
+        case $yn in
+            [Yy]* ) return 0;;
+            [Nn]* ) return 1;;
+            * ) echo "Please answer yes (y) or no (n).";;
+        esac
+    done
+}
+
 clear
 echo -e "${BLUE}Laravel Blog Installer${NC}"
 echo "====================="
 echo
 
-# Check requirements
-echo -e "${GREEN}Checking requirements...${NC}"
-REQUIREMENTS_MET=true
-
-if ! command_exists php; then
-    echo -e "${RED}✗ PHP is not installed${NC}"
-    REQUIREMENTS_MET=false
-fi
-
-if ! command_exists composer; then
-    echo -e "${RED}✗ Composer is not installed${NC}"
-    REQUIREMENTS_MET=false
-fi
-
-if ! command_exists nginx; then
-    echo -e "${YELLOW}⚠ Nginx is not installed${NC}"
-    echo "Would you like to install Nginx? (y/n)"
-    read -p "Choice: " INSTALL_NGINX
-    if [ "$INSTALL_NGINX" = "y" ]; then
-        sudo apt-get update
-        sudo apt-get install -y nginx
-    else
-        echo -e "${YELLOW}⚠ Skipping Nginx installation${NC}"
-    fi
-fi
-
-if [ "$REQUIREMENTS_MET" = false ]; then
-    echo -e "${RED}Please install the missing requirements and try again.${NC}"
+# Check if running with sudo
+if [ "$EUID" -ne 0 ]; then 
+    echo -e "${RED}Please run with sudo:${NC}"
+    echo "sudo bash $0"
     exit 1
 fi
 
-echo -e "${GREEN}✓ All requirements met${NC}"
-echo
-
-# 1. Ask about environment
-echo -e "${GREEN}Step 1:${NC} Are you installing for:"
+# 1. Environment Selection
+echo -e "${GREEN}Step 1:${NC} Choose your environment:"
 echo "1) Local development (localhost)"
 echo "2) Production server (with domain)"
 read -p "Enter choice [1-2]: " ENV_CHOICE
@@ -76,24 +64,63 @@ case $ENV_CHOICE in
         IS_LOCAL=true
         ;;
 esac
-echo
 
-# 2. Database Selection
-echo -e "${GREEN}Step 2:${NC} Choose your database:"
+# 2. Check and Install Requirements
+echo -e "\n${GREEN}Checking requirements...${NC}"
+
+# Check PHP
+CURRENT_PHP_VERSION=$(check_php_version)
+if [ "$CURRENT_PHP_VERSION" = "0" ]; then
+    echo -e "${RED}PHP is not installed.${NC}"
+    if ask_yes_no "Would you like to install PHP 8.2 (stable version)?"; then
+        sudo apt-get update
+        sudo apt-get install -y php8.2-fpm php8.2-cli php8.2-common php8.2-mbstring php8.2-xml php8.2-curl
+    else
+        echo -e "${RED}PHP is required. Installation cannot continue.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ PHP $CURRENT_PHP_VERSION is installed${NC}"
+fi
+
+# Check Composer
+if ! command_exists composer; then
+    echo -e "${RED}Composer is not installed.${NC}"
+    if ask_yes_no "Would you like to install Composer?"; then
+        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
+        php composer-setup.php --install-dir=/usr/local/bin --filename=composer
+        php -r "unlink('composer-setup.php');"
+    else
+        echo -e "${RED}Composer is required. Installation cannot continue.${NC}"
+        exit 1
+    fi
+else
+    echo -e "${GREEN}✓ Composer is installed${NC}"
+fi
+
+# 3. Database Selection
+echo -e "\n${GREEN}Step 2:${NC} Choose your database:"
 echo "1) SQLite (Simplest, good for small blogs)"
 echo "2) MySQL (Good for medium to large blogs)"
-echo "3) PostgreSQL (Advanced features, good for large blogs)"
+echo "3) PostgreSQL (Advanced features)"
 read -p "Enter choice [1-3]: " DB_CHOICE
 
 case $DB_CHOICE in
     1)
         DB_CONNECTION="sqlite"
-        echo -e "\nInstalling SQLite..."
-        sudo apt-get update
-        sudo apt-get install -y sqlite3 php-sqlite3
+        if ! command_exists sqlite3; then
+            echo -e "${YELLOW}SQLite is not installed.${NC}"
+            if ask_yes_no "Would you like to install SQLite?"; then
+                sudo apt-get update
+                sudo apt-get install -y sqlite3 php8.*-sqlite3
+            fi
+        else
+            echo -e "${GREEN}✓ SQLite is already installed${NC}"
+        fi
         echo -e "\nCreating SQLite database..."
+        mkdir -p database
         touch database/database.sqlite
-        sudo chmod 777 database/database.sqlite
+        chmod 777 database/database.sqlite
         ;;
     2)
         DB_CONNECTION="mysql"
@@ -113,40 +140,26 @@ case $DB_CHOICE in
         echo -e "${YELLOW}Invalid choice. Using SQLite as default.${NC}"
         DB_CONNECTION="sqlite"
         touch database/database.sqlite
+        chmod 777 database/database.sqlite
         ;;
 esac
 
-# 3. Ask about SSL (skip for local development)
-if [ "$IS_LOCAL" = true ]; then
-    USE_SSL="n"
-    echo -e "\n${BLUE}Local development:${NC} Using HTTP for localhost"
-else
-    echo -e "\n${GREEN}Step 3:${NC} Do you want to set up HTTPS/SSL? (y/n)"
-    read -p "Choice: " USE_SSL
-fi
-
-# Get current directory
-CURRENT_DIR=$(pwd)
-
-echo
-echo -e "${GREEN}Starting installation...${NC}"
-echo "This might take a few minutes..."
-echo
+# 4. Application Setup
+echo -e "\n${GREEN}Setting up Laravel application...${NC}"
 
 # Basic setup
-echo "→ Setting up Laravel..."
 cp .env.example .env
-composer install --quiet
+composer install --no-interaction
 
-# Update .env file based on database choice
-sed -i "s|APP_URL=.*|APP_URL=https://$DOMAIN_NAME|" .env
+# Update .env file
+sed -i "s|APP_URL=.*|APP_URL=http://$DOMAIN_NAME|" .env
 sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=$DB_CONNECTION|" .env
 
 if [ "$DB_CONNECTION" = "sqlite" ]; then
     # Configure for SQLite
     sed -i "s|DB_HOST=.*|DB_HOST=|" .env
     sed -i "s|DB_PORT=.*|DB_PORT=|" .env
-    sed -i "s|DB_DATABASE=.*|DB_DATABASE=$CURRENT_DIR/database/database.sqlite|" .env
+    sed -i "s|DB_DATABASE=.*|DB_DATABASE=$PWD/database/database.sqlite|" .env
     sed -i "s|DB_USERNAME=.*|DB_USERNAME=|" .env
     sed -i "s|DB_PASSWORD=.*|DB_PASSWORD=|" .env
 else
@@ -169,34 +182,43 @@ php artisan storage:link --quiet
 
 # Set permissions
 echo "→ Setting correct permissions..."
-sudo chown -R $USER:www-data .
-sudo find . -type f -exec chmod 664 {} \;
-sudo find . -type d -exec chmod 775 {} \;
-sudo chmod -R 775 storage bootstrap/cache
+chown -R $SUDO_USER:www-data .
+find . -type f -exec chmod 664 {} \;
+find . -type d -exec chmod 775 {} \;
+chmod -R 775 storage bootstrap/cache
 
-# Configure Nginx
-echo "→ Setting up Nginx..."
-
-# Choose template based on SSL preference
-if [ "$USE_SSL" = "y" ]; then
-    TEMPLATE="config/nginx/https.conf.template"
+# Configure web server
+if [ "$IS_LOCAL" = true ]; then
+    echo -e "\n${GREEN}Local Development Setup${NC}"
+    echo "To start the development server:"
+    echo "php artisan serve"
+    
+    # Create a convenient start script
+    echo '#!/bin/bash' > start-server.sh
+    echo 'php artisan serve --host=0.0.0.0 --port=8000' >> start-server.sh
+    chmod +x start-server.sh
 else
-    TEMPLATE="config/nginx/http.conf.template"
-fi
-
-# Replace placeholders in template
-sed "s|{{domain}}|$DOMAIN_NAME|g; s|{{path}}|$CURRENT_DIR|g" "$TEMPLATE" | \
-    sudo tee "/etc/nginx/sites-available/$DOMAIN_NAME" > /dev/null
-
-# Enable the site
-sudo ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
-
-# Test and restart Nginx
-if sudo nginx -t; then
-    sudo systemctl restart nginx
-    echo -e "${GREEN}✓ Nginx configuration successful${NC}"
-else
-    echo -e "${RED}✗ Nginx configuration failed. Please check the error above.${NC}"
+    echo "→ Setting up Nginx..."
+    if ! command_exists nginx; then
+        if ask_yes_no "Nginx is not installed. Would you like to install it?"; then
+            sudo apt-get update
+            sudo apt-get install -y nginx
+        fi
+    fi
+    
+    # Configure Nginx only if installed
+    if command_exists nginx; then
+        # Use template from config/nginx
+        cp config/nginx/http.conf.template "/etc/nginx/sites-available/$DOMAIN_NAME"
+        sed -i "s|{{domain}}|$DOMAIN_NAME|g" "/etc/nginx/sites-available/$DOMAIN_NAME"
+        sed -i "s|{{path}}|$PWD|g" "/etc/nginx/sites-available/$DOMAIN_NAME"
+        
+        # Enable the site
+        ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
+        
+        # Test and restart Nginx
+        nginx -t && systemctl restart nginx
+    fi
 fi
 
 # Optimize Laravel
@@ -212,39 +234,28 @@ echo
 echo "Your blog has been installed with:"
 echo -e "• Database: ${BLUE}$DB_CONNECTION${NC}"
 if [ "$DB_CONNECTION" = "sqlite" ]; then
-    echo -e "• Database location: ${BLUE}$CURRENT_DIR/database/database.sqlite${NC}"
+    echo -e "• Database location: ${BLUE}$PWD/database/database.sqlite${NC}"
 else
     echo -e "• Database name: ${BLUE}$DB_NAME${NC}"
 fi
-echo -e "• Web root: ${BLUE}$CURRENT_DIR${NC}"
-echo -e "• Nginx config: ${BLUE}/etc/nginx/sites-available/$DOMAIN_NAME${NC}"
-echo
+echo -e "• Installation directory: ${BLUE}$PWD${NC}"
 
 if [ "$IS_LOCAL" = true ]; then
-    echo -e "${GREEN}Local Development Setup Complete!${NC}"
-    echo "Your blog is now accessible at: http://localhost"
-    echo
-    echo "To start using your blog:"
-    echo "1. Make sure port 80 is available (stop other web servers if needed)"
-    echo "2. Visit http://localhost in your browser"
-    echo
-    echo "To stop the server later:"
-    echo "sudo systemctl stop nginx"
+    echo -e "\n${GREEN}To start your blog:${NC}"
+    echo "1. Run: ./start-server.sh"
+    echo "2. Visit: http://localhost:8000"
 else
-    if [ "$USE_SSL" = "y" ]; then
-        echo "Next steps:"
+    if command_exists nginx; then
+        echo -e "\n${GREEN}To access your blog:${NC}"
         echo "1. Point your domain ($DOMAIN_NAME) to this server"
-        echo "2. Install SSL certificate by running:"
-        echo "   sudo certbot --nginx -d $DOMAIN_NAME"
-        echo
-        echo "To install certbot:"
-        echo "sudo apt-get update"
-        echo "sudo apt-get install -y certbot python3-certbot-nginx"
+        echo "2. Visit: http://$DOMAIN_NAME"
+        echo -e "\nTo set up SSL:"
+        echo "sudo certbot --nginx -d $DOMAIN_NAME"
     else
-        echo "Your blog is now accessible at: http://$DOMAIN_NAME"
-        echo "To enable HTTPS later, run: sudo certbot --nginx -d $DOMAIN_NAME"
+        echo -e "\n${YELLOW}Note: Nginx was not installed.${NC}"
+        echo "You'll need to set up a web server manually or use PHP's built-in server:"
+        echo "./start-server.sh"
     fi
 fi
 
-echo
-echo -e "${BLUE}Thank you for using Laravel Blog!${NC}"
+echo -e "\n${BLUE}Thank you for using Laravel Blog!${NC}"
