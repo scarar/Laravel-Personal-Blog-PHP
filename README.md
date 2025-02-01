@@ -4,10 +4,16 @@ A modern, super easy-to-install blog application built with Laravel PHP framewor
 
 ## Quick Install (One Command!)
 
-Download and run the installer with one command:
+1. Open terminal and run this command (sudo password required):
 ```bash
-curl -s https://raw.githubusercontent.com/scarar/Laravel-Personal-Blog-PHP/main/get-blog.sh | sudo bash
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/scarar/Laravel-Personal-Blog-PHP/main/get-blog.sh)"
 ```
+
+⚠️ Note: This script needs sudo access to:
+- Install required packages
+- Set up web server
+- Configure permissions
+- Create directories
 
 The installer will:
 1. Ask where you want to install the blog
@@ -39,12 +45,19 @@ The installer will:
 
 ## Requirements
 
-- PHP 8.4
-- Web server (Nginx recommended)
-- One of these databases:
-  - SQLite (simplest, good for small blogs)
-  - MySQL (good for medium to large blogs)
-  - PostgreSQL (advanced features)
+1. System Requirements:
+   - Linux/Unix system with sudo access
+   - Curl installed (`sudo apt-get install curl`)
+
+2. The installer will automatically set up:
+   - PHP 8.4 and extensions
+   - Nginx web server
+   - Your choice of database:
+     - SQLite (simplest, good for small blogs)
+     - MySQL (good for medium to large blogs)
+     - PostgreSQL (advanced features)
+
+No need to install anything manually - the installer handles everything!
 
 ## Configuration Files
 

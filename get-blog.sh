@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# Check if script is run with sudo
+if [ "$EUID" -ne 0 ]; then 
+    echo "Please run with sudo:"
+    echo "sudo bash $0"
+    exit 1
+fi
+
 # Colors for better readability
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
