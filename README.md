@@ -35,6 +35,8 @@ And you're ready to go!
 - Built-in PHP server for local development
 - No nginx needed for localhost
 - Automatic permission handling
+- Complete asset building with Vite
+- Production-ready optimizations
 
 ## Features
 
@@ -53,10 +55,13 @@ And you're ready to go!
 1. System Requirements:
    - Linux/Unix system with sudo access
    - Curl installed (`sudo apt-get install curl`)
+   - Node.js and npm for building assets
    - For SQLite (if chosen):
      ```bash
      sudo apt-get install sqlite3 php-sqlite3
      ```
+
+   Note: The installer will offer to install any missing requirements.
 
 2. The installer will automatically set up:
    - PHP 8.4 and extensions

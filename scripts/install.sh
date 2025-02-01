@@ -151,6 +151,23 @@ echo -e "\n${GREEN}Setting up Laravel application...${NC}"
 cp .env.example .env
 composer install --no-interaction
 
+# Install and build frontend assets
+echo -e "\n${GREEN}Installing and building frontend assets...${NC}"
+if ! command_exists npm; then
+    echo -e "${YELLOW}npm is not installed.${NC}"
+    if ask_yes_no "Would you like to install Node.js and npm?"; then
+        curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+        sudo apt-get install -y nodejs
+    else
+        echo -e "${RED}npm is required for building frontend assets. Installation cannot continue.${NC}"
+        exit 1
+    fi
+fi
+
+# Install npm dependencies and build
+npm install
+npm run build
+
 # Update .env file
 sed -i "s|APP_URL=.*|APP_URL=http://$DOMAIN_NAME|" .env
 sed -i "s|DB_CONNECTION=.*|DB_CONNECTION=$DB_CONNECTION|" .env
