@@ -84,7 +84,6 @@ deploy_production() {
     mkdir -p "$1"
     cp -r public/build "$1"
     cp public/index.php "$1"
-    cp public/.htaccess "$1" 2>/dev/null || true
 
     echo "→ Cleaning up unnecessary files and directories..."
     find "$1" -mindepth 1 ! -name 'index.php' ! -name 'build' -exec rm -rf {} +
