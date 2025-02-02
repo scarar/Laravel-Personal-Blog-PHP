@@ -52,32 +52,47 @@ print_status "Installing PHP dependencies..."
 cd $BUILD_DIR
 composer install --no-dev --optimize-autoloader
 
-# Install Node.js dependencies and build assets
-print_status "Installing Node.js dependencies and building assets..."
+# Install Node.js dependencies
+print_status "Installing Node.js dependencies..."
 npm install
+
+# Build frontend assets
+print_status "Building frontend assets..."
+export NODE_ENV=production
 npm run build
 
-# Remove development files
-print_status "Removing development files..."
-rm -rf node_modules
-rm -rf tests
-rm package.json package-lock.json
-rm postcss.config.js tailwind.config.js vite.config.js
+# Verify build directory exists
+if [ ! -d "public/build" ]; then
+    mkdir -p public/build
+fi
 
-# Set proper permissions
-print_status "Setting proper permissions..."
-chown -R www-data:www-data .
-find . -type f -exec chmod 644 {} \;
-find . -type d -exec chmod 755 {} \;
-chmod -R 775 storage bootstrap/cache
+# Verify assets were built
+if [ ! -f "public/build/manifest.json" ]; then
+    print_error "Asset compilation failed. No manifest.json found."
+fi
 
-# Create SQLite database
-print_status "Setting up SQLite database..."
-touch database/database.sqlite
-chmod 775 database/database.sqlite
-chown www-data:www-data database/database.sqlite
+# Copy additional assets
+print_status "Copying additional assets..."
+if [ -d "resources/images" ]; then
+    cp -r resources/images public/images
+fi
 
-# Create .env file
+# Optimize images if optipng is available
+if command -v optipng &> /dev/null; then
+    print_status "Optimizing images..."
+    find public/images -type f -name "*.png" -exec optipng -o5 {} \;
+fi
+
+# Verify and clean up
+print_status "Verifying asset build..."
+if [ ! -d "public/build" ] || [ ! -f "public/build/manifest.json" ]; then
+    print_error "Asset verification failed"
+fi
+
+# Remove source maps in production
+find public/build -name "*.map" -delete
+
+# Create .env file before optimization
 print_status "Creating environment file..."
 cp .env.example .env
 sed -i "s|APP_NAME=Laravel|APP_NAME=\"Personal Blog\"|g" .env
@@ -89,6 +104,11 @@ sed -i "s|DB_DATABASE=laravel|DB_DATABASE=database/database.sqlite|g" .env
 # Generate application key
 print_status "Generating application key..."
 php artisan key:generate
+
+# Create SQLite database
+print_status "Setting up SQLite database..."
+touch database/database.sqlite
+chmod 775 database/database.sqlite
 
 # Run migrations
 print_status "Running migrations..."
@@ -105,5 +125,25 @@ php artisan view:cache
 php artisan config:cache
 php artisan route:cache
 
+# Remove development files
+print_status "Removing development files..."
+rm -rf node_modules
+rm -rf tests
+rm package.json package-lock.json postcss.config.js tailwind.config.js vite.config.js
+
+# Set proper permissions
+print_status "Setting proper permissions..."
+chown -R www-data:www-data .
+find . -type f -exec chmod 644 {} \;
+find . -type d -exec chmod 755 {} \;
+chmod -R 775 storage bootstrap/cache
+chmod 775 database/database.sqlite
+
 print_success "Build completed successfully!"
 echo -e "${GREEN}The optimized application is now in the '$BUILD_DIR' directory${NC}"
+echo -e "${YELLOW}Important notes:${NC}"
+echo "1. Frontend assets are in public/build/"
+echo "2. Database file is at database/database.sqlite"
+echo "3. Storage link has been created"
+echo "4. All caches have been optimized"
+echo "5. Permissions have been set correctly"
