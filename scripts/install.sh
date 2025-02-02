@@ -255,11 +255,21 @@ EOL
     fi
 fi
 
+# Set permissions for public directory
+echo "→ Setting permissions for public directory..."
+sudo chown -R www-data:www-data $PWD/public
+sudo chmod -R 755 $PWD/public
+
 # Optimize Laravel
 echo "→ Optimizing Laravel..."
 php artisan config:cache --quiet
 php artisan route:cache --quiet
 php artisan view:cache --quiet
+
+# Add build command
+echo "#!/bin/bash" > build-assets.sh
+echo "npm run build" >> build-assets.sh
+chmod +x build-assets.sh
 
 # Done!
 echo
@@ -273,6 +283,8 @@ else
     echo -e "• Database name: ${BLUE}$DB_NAME${NC}"
 fi
 echo -e "• Installation directory: ${BLUE}$PWD${NC}"
+
+echo -e "\n${GREEN}To rebuild assets, run: ./build-assets.sh${NC}"
 
 if [ "$IS_LOCAL" = true ]; then
     echo -e "\n${GREEN}To start your blog:${NC}"
