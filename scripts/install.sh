@@ -276,8 +276,18 @@ sudo sed -i '/http {/a \tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.co
         echo "Enter the path where you want to place the built website (e.g., /var/www/myblog):"
         read -p "Path: " WEBSITE_PATH
         
+        # Ask for Nginx configuration name
+        while true; do
+            read -p "Enter a name for the Nginx configuration: " CONFIG_NAME
+            if [ -f "/etc/nginx/sites-available/$CONFIG_NAME" ]; then
+                echo "Configuration with this name already exists. Please try again."
+            else
+                break
+            fi
+        done
+
         # Create Nginx configuration
-        cat <<EOL > "/etc/nginx/sites-available/laravel"
+        cat <<EOL > "/etc/nginx/sites-available/$CONFIG_NAME"
 server {
     listen ${PORT_NUMBER:-80};
     listen [::]:${PORT_NUMBER:-80};
@@ -303,7 +313,7 @@ server {
 EOL
 
         # Enable the site
-        ln -sf "/etc/nginx/sites-available/laravel" "/etc/nginx/sites-enabled/"
+        ln -sf "/etc/nginx/sites-available/$CONFIG_NAME" "/etc/nginx/sites-enabled/"
         
         # Test and restart Nginx
         nginx -t && systemctl restart nginx
