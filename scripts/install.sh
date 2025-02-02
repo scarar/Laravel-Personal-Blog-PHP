@@ -277,10 +277,10 @@ sudo sed -i '/http {/a \tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.co
         read -p "Path: " WEBSITE_PATH
         
         # Create Nginx configuration
-        cat <<EOL > "/etc/nginx/sites-available/default"
+        cat <<EOL > "/etc/nginx/sites-available/laravel"
 server {
-    listen ${PORT_NUMBER:-80} default_server;
-    listen [::]:${PORT_NUMBER:-80} default_server;
+    listen ${PORT_NUMBER:-80};
+    listen [::]:${PORT_NUMBER:-80};
 
     root $WEBSITE_PATH/public;
     index index.php index.html index.htm;
@@ -303,7 +303,7 @@ server {
 EOL
 
         # Enable the site
-        ln -sf "/etc/nginx/sites-available/default" "/etc/nginx/sites-enabled/"
+        ln -sf "/etc/nginx/sites-available/laravel" "/etc/nginx/sites-enabled/"
         
         # Test and restart Nginx
         nginx -t && systemctl restart nginx
