@@ -45,6 +45,20 @@ if [ "$EUID" -ne 0 ]; then
     echo "sudo bash $0"
     exit 1
 fi
+# Function to deploy only necessary files for production
+deploy_production() {
+    echo "→ Building assets for production..."
+    npm run build
+
+    echo "→ Deploying to production directory..."
+    mkdir -p "$1"
+    cp -r public/build "$1"
+    cp public/index.php "$1"
+
+    echo "→ Cleaning up unnecessary files and directories..."
+    find "$1" -mindepth 1 ! -name 'index.php' ! -name 'build' -exec rm -rf {} +
+}
+
 # 0. Deployment Path Selection
 echo -e "${GREEN}Deployment Path Selection:${NC}"
 echo "1) Current directory ($PWD)"
@@ -262,12 +276,21 @@ sudo sed -i '/http {/a \tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.co
         echo "Enter the path where you want to place the built website (e.g., /var/www/myblog):"
         read -p "Path: " WEBSITE_PATH
         
+        # Ask for Nginx configuration name
+        while true; do
+            read -p "Enter a name for the Nginx configuration: " CONFIG_NAME
+            if [ -f "/etc/nginx/sites-available/$CONFIG_NAME" ]; then
+                echo "Configuration with this name already exists. Please try again."
+            else
+                break
+            fi
+        done
+
         # Create Nginx configuration
-        cat <<EOL > "/etc/nginx/sites-available/$DOMAIN_NAME"
+        cat <<EOL > "/etc/nginx/sites-available/$CONFIG_NAME"
 server {
-    listen ${PORT_NUMBER:-80} default_server;
-    listen [::]:${PORT_NUMBER:-80} default_server;
-    server_name $DOMAIN_NAME;
+    listen ${PORT_NUMBER:-80};
+    listen [::]:${PORT_NUMBER:-80};
 
     root $WEBSITE_PATH/public;
     index index.php index.html index.htm;
@@ -278,7 +301,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -290,7 +313,7 @@ server {
 EOL
 
         # Enable the site
-        ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
+        ln -sf "/etc/nginx/sites-available/$CONFIG_NAME" "/etc/nginx/sites-enabled/"
         
         # Test and restart Nginx
         nginx -t && systemctl restart nginx
