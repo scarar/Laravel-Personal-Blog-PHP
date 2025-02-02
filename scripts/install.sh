@@ -45,6 +45,20 @@ if [ "$EUID" -ne 0 ]; then
     echo "sudo bash $0"
     exit 1
 fi
+# Function to deploy only necessary files for production
+deploy_production() {
+    echo "→ Building assets for production..."
+    npm run build
+
+    echo "→ Deploying to production directory..."
+    mkdir -p "$1"
+    cp -r public/build "$1"
+    cp public/index.php "$1"
+
+    echo "→ Cleaning up unnecessary files and directories..."
+    find "$1" -mindepth 1 ! -name 'index.php' ! -name 'build' -exec rm -rf {} +
+}
+
 # 0. Deployment Path Selection
 echo -e "${GREEN}Deployment Path Selection:${NC}"
 echo "1) Current directory ($PWD)"
