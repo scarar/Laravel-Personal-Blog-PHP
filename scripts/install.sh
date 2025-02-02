@@ -208,6 +208,10 @@ if [ "$IS_LOCAL" = true ]; then
     chmod +x start-server.sh
 else
     echo "→ Setting up Nginx..."
+# Increase server_names_hash_bucket_size for longer domain names
+echo "→ Configuring Nginx for longer domain names..."
+sudo sed -i '/http {/a \tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.conf
+
     if ! command_exists nginx; then
         if ask_yes_no "Nginx is not installed. Would you like to install it?"; then
             sudo apt-get update
