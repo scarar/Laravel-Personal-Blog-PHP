@@ -45,12 +45,50 @@ if [ "$EUID" -ne 0 ]; then
     echo "sudo bash $0"
     exit 1
 fi
+# 0. Deployment Path Selection
+echo -e "${GREEN}Deployment Path Selection:${NC}"
+echo "1) Current directory ($PWD)"
+echo "2) Create new directory here"
+echo "3) Specify custom path"
+read -p "Choose [1-3]: " DEPLOY_CHOICE
+
+case $DEPLOY_CHOICE in
+    2)
+        read -p "Enter new directory name: " NEW_DIR
+        DEPLOY_PATH="$PWD/$NEW_DIR"
+        ;;
+    3)
+        read -p "Enter custom path: " DEPLOY_PATH
+        ;;
+    *)
+        DEPLOY_PATH="$PWD"
+        ;;
+esac
+
+deploy_production "$DEPLOY_PATH"
+
+
 
 # 1. Domain Name
 read -p "Enter your domain name (e.g., myblog.com or onion address): " DOMAIN_NAME
 read -p "Enter the port number to use (default 80): " PORT_NUMBER
 PORT_NUMBER=
 IS_LOCAL=false
+
+# Function to deploy only necessary files for production
+deploy_production() {
+    echo "→ Building assets for production..."
+    npm run build
+
+    echo "→ Deploying to production directory..."
+    mkdir -p "$1"
+    cp -r public/build "$1"
+    cp public/index.php "$1"
+
+    echo "→ Cleaning up unnecessary files and directories..."
+    find "$1" -mindepth 1 ! -name 'index.php' ! -name 'build' -exec rm -rf {} +
+}
+
 
 # 2. Check and Install Requirements
 echo -e "\n${GREEN}Checking requirements...${NC}"
