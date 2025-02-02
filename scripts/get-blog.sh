@@ -85,23 +85,41 @@ get_deployment_path() {
     echo "================================"
     echo
     
+    # Store current directory
+    CURRENT_DIR=$(pwd)
+    
     echo -e "${GREEN}Where would you like to install the blog?${NC}"
-    echo "1) Current directory ($(pwd))"
+    echo "1) Current directory ($CURRENT_DIR)"
     echo "2) Create new directory here"
     echo "3) Specify custom path"
     read -p "Choose [1-3]: " choice
     
     case $choice in
         1)
-            echo "$(pwd)"
+            # Check if directory is empty
+            if [ "$(ls -A $CURRENT_DIR)" ]; then
+                print_error "Current directory is not empty. Please choose an empty directory."
+            fi
+            echo "$CURRENT_DIR"
             ;;
         2)
             read -p "Enter directory name: " dir_name
-            mkdir -p "$dir_name"
-            echo "$(pwd)/$dir_name"
+            FULL_PATH="$CURRENT_DIR/$dir_name"
+            if [ -d "$FULL_PATH" ] && [ "$(ls -A $FULL_PATH)" ]; then
+                print_error "Directory $dir_name already exists and is not empty"
+            fi
+            mkdir -p "$FULL_PATH"
+            echo "$FULL_PATH"
             ;;
         3)
             read -p "Enter full path: " custom_path
+            # Convert relative path to absolute
+            if [[ "$custom_path" != /* ]]; then
+                custom_path="$CURRENT_DIR/$custom_path"
+            fi
+            if [ -d "$custom_path" ] && [ "$(ls -A $custom_path)" ]; then
+                print_error "Directory $custom_path already exists and is not empty"
+            fi
             mkdir -p "$custom_path"
             echo "$custom_path"
             ;;
@@ -133,20 +151,130 @@ main() {
     print_status "Installing PHP dependencies..."
     composer install --no-dev --optimize-autoloader
     
-    # Install Node.js dependencies globally
-    print_status "Installing Node.js dependencies..."
-    sudo npm install -g vite
+    # Install and build frontend assets
+    print_status "Setting up frontend assets..."
+    
+    # Create package.json if it doesn't exist
+    if [ ! -f "package.json" ]; then
+        cat > package.json << 'EOF'
+{
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build"
+    },
+    "devDependencies": {
+        "@tailwindcss/forms": "^0.5.7",
+        "@tailwindcss/typography": "^0.5.10",
+        "alpinejs": "^3.13.3",
+        "autoprefixer": "^10.4.16",
+        "axios": "^1.6.2",
+        "laravel-vite-plugin": "^1.0.0",
+        "postcss": "^8.4.32",
+        "tailwindcss": "^3.4.0",
+        "vite": "^5.0.10"
+    }
+}
+EOF
+    fi
+    
+    # Install dependencies
     npm install
     
+    # Create Vite config if it doesn't exist
+    if [ ! -f "vite.config.js" ]; then
+        cat > vite.config.js << 'EOF'
+import { defineConfig } from 'vite';
+import laravel from 'laravel-vite-plugin';
+
+export default defineConfig({
+    plugins: [
+        laravel({
+            input: ['resources/css/app.css', 'resources/js/app.js'],
+            refresh: true,
+        }),
+    ],
+});
+EOF
+    fi
+    
+    # Ensure resources directory exists
+    mkdir -p resources/css resources/js
+    
+    # Create basic CSS file if it doesn't exist
+    if [ ! -f "resources/css/app.css" ]; then
+        echo "@tailwind base;
+@tailwind components;
+@tailwind utilities;" > resources/css/app.css
+    fi
+    
+    # Create basic JS file if it doesn't exist
+    if [ ! -f "resources/js/app.js" ]; then
+        echo "import './bootstrap';" > resources/js/app.js
+    fi
+    
+    # Create Tailwind config if it doesn't exist
+    if [ ! -f "tailwind.config.js" ]; then
+        cat > tailwind.config.js << 'EOF'
+/** @type {import('tailwindcss').Config} */
+export default {
+    content: [
+        "./resources/**/*.blade.php",
+        "./resources/**/*.js",
+        "./resources/**/*.vue",
+    ],
+    theme: {
+        extend: {
+            typography: {
+                DEFAULT: {
+                    css: {
+                        maxWidth: '100ch',
+                        color: 'inherit',
+                        a: {
+                            color: '#3182ce',
+                            '&:hover': {
+                                color: '#2c5282',
+                            },
+                        },
+                    },
+                },
+            },
+        },
+    },
+    plugins: [
+        require('@tailwindcss/typography'),
+        require('@tailwindcss/forms')
+    ],
+}
+EOF
+    fi
+    
+    # Create PostCSS config if it doesn't exist
+    if [ ! -f "postcss.config.js" ]; then
+        cat > postcss.config.js << 'EOF'
+export default {
+    plugins: {
+        tailwindcss: {},
+        autoprefixer: {},
+    },
+}
+EOF
+    fi
+    
     # Build assets
-    print_status "Building assets for production..."
-    export PATH="$DEPLOY_PATH/node_modules/.bin:$PATH"
+    print_status "Building frontend assets..."
     npm run build
     
-    # Deploy to production directory
-    print_status "Deploying to production directory..."
-    mkdir -p public/build
-    cp -r public/build/* public/
+    # Verify build
+    if [ ! -d "public/build" ]; then
+        mkdir -p public/build
+    fi
+    
+    # Check if build was successful
+    if [ ! -f "public/build/manifest.json" ]; then
+        print_error "Asset build failed. Check npm and Vite configuration."
+    fi
     
     # Clean up
     print_status "Cleaning up unnecessary files and directories..."
