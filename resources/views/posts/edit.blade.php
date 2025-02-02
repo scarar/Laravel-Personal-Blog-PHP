@@ -1,48 +1,116 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="bg-white rounded-lg shadow-md p-8">
-        <h1 class="text-2xl font-bold mb-6">Edit Post</h1>
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-3xl font-bold text-gray-900">Edit Post</h1>
+        <a href="{{ route('posts.show', $post) }}" class="text-blue-600 hover:text-blue-800 flex items-center">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Back to Post
+        </a>
+    </div>
 
-        <form action="{{ route('posts.update', $post) }}" method="POST" enctype="multipart/form-data">
+    <div class="bg-white shadow rounded-lg">
+        <form action="{{ route('posts.update', $post) }}" method="POST" enctype="multipart/form-data" class="space-y-6 p-6">
             @csrf
             @method('PUT')
 
-            <div class="mb-4">
-                <label for="title" class="block text-gray-700 font-bold mb-2">Title</label>
-                <input type="text" name="title" id="title" class="w-full px-3 py-2 border rounded-lg @error('title') border-red-500 @enderror" value="{{ old('title', $post->title) }}" required>
+            <!-- Title -->
+            <div>
+                <label for="title" class="form-label">Title</label>
+                <input type="text" 
+                       name="title" 
+                       id="title" 
+                       class="form-input" 
+                       value="{{ old('title', $post->title) }}" 
+                       required>
                 @error('title')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div class="mb-4">
-                <label for="content" class="block text-gray-700 font-bold mb-2">Content</label>
-                <textarea name="content" id="content" rows="10" class="w-full px-3 py-2 border rounded-lg @error('content') border-red-500 @enderror" required>{{ old('content', $post->content) }}</textarea>
+            <!-- Excerpt -->
+            <div>
+                <label for="excerpt" class="form-label">Excerpt</label>
+                <textarea name="excerpt" 
+                          id="excerpt" 
+                          class="form-input" 
+                          rows="3">{{ old('excerpt', $post->excerpt) }}</textarea>
+                @error('excerpt')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Content -->
+            <div>
+                <label for="content" class="form-label">Content</label>
+                <textarea name="content" 
+                          id="content" 
+                          class="tinymce" 
+                          rows="12">{{ old('content', $post->content) }}</textarea>
                 @error('content')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div class="mb-6">
-                <label for="featured_image" class="block text-gray-700 font-bold mb-2">Featured Image</label>
+            <!-- Featured Image -->
+            <div>
+                <label for="featured_image" class="form-label">Featured Image</label>
+                <input type="file" 
+                       name="featured_image" 
+                       id="featured_image" 
+                       class="form-input" 
+                       accept="image/*">
+                @error('featured_image')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
                 @if ($post->featured_image)
-                    <div class="mb-2">
-                        <img src="{{ asset('storage/' . $post->featured_image) }}" alt="Current featured image" class="w-48 h-48 object-cover rounded">
+                    <div class="mt-2">
+                        <img src="{{ asset('storage/' . $post->featured_image) }}" 
+                             alt="Current featured image" 
+                             class="max-w-xs rounded">
                     </div>
                 @endif
-                <input type="file" name="featured_image" id="featured_image" class="w-full @error('featured_image') border-red-500 @enderror" accept="image/*">
-                @error('featured_image')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                <img src="" alt="Preview" class="image-preview mt-2 hidden max-w-xs">
+            </div>
+
+            <!-- Status -->
+            <div>
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-input">
+                    <option value="draft" {{ old('status', $post->status) == 'draft' ? 'selected' : '' }}>Draft</option>
+                    <option value="published" {{ old('status', $post->status) == 'published' ? 'selected' : '' }}>Published</option>
+                </select>
+                @error('status')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div class="flex items-center">
-                <button type="submit" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600">
+            <!-- Published At -->
+            <div>
+                <label for="published_at" class="form-label">Publish Date</label>
+                <input type="datetime-local" 
+                       name="published_at" 
+                       id="published_at" 
+                       class="form-input" 
+                       value="{{ old('published_at', $post->published_at ? $post->published_at->format('Y-m-d\TH:i') : '') }}">
+                @error('published_at')
+                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex justify-end space-x-4">
+                <a href="{{ route('posts.show', $post) }}" class="btn btn-secondary">
+                    Cancel
+                </a>
+                <button type="submit" class="btn btn-primary">
                     Update Post
                 </button>
-                <a href="{{ route('posts.show', $post) }}" class="ml-4 text-gray-600 hover:text-gray-800">Cancel</a>
             </div>
         </form>
     </div>
+</div>
 @endsection
