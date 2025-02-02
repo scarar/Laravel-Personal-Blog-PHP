@@ -51,18 +51,47 @@ install_system_packages() {
         acl \
         imagemagick \
         build-essential \
-        supervisor
+        supervisor \
+        lsb-release \
+        gnupg2
 
-    # Add PHP repository
-    if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-        add-apt-repository -y ppa:ondrej/php
-        apt-get update
+    # Add PHP repository based on system
+    if [ -f "/etc/debian_version" ]; then
+        # Debian-based system
+        if ! grep -q "packages.sury.org" /etc/apt/sources.list.d/*; then
+            # Create keyrings directory if it doesn't exist
+            mkdir -p /usr/share/keyrings
+            # Download and install GPG key
+            curl -sSLo /usr/share/keyrings/deb.sury.org-php.gpg https://packages.sury.org/php/apt.gpg
+            # Add repository
+            echo "deb [signed-by=/usr/share/keyrings/deb.sury.org-php.gpg] https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list
+            # Update package list
+            apt-get update
+        fi
+    elif [ -f "/etc/lsb-release" ]; then
+        # Ubuntu-based system
+        if ! grep -q "^deb .*ondrej/php" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
+            add-apt-repository -y ppa:ondrej/php
+            apt-get update
+        fi
+    else
+        print_error "Unsupported system. Please install PHP ${PHP_VERSION} manually."
     fi
 
-    # Add Node.js repository
-    if ! grep -q "^deb .*nodesource" /etc/apt/sources.list /etc/apt/sources.list.d/*; then
-        curl -fsSL "https://deb.nodesource.com/setup_${NODE_VERSION}.x" | bash -
-        apt-get update
+    # Add Node.js repository if not already added
+    if ! command -v node &> /dev/null || [[ "$(node -v)" != *"${NODE_VERSION}"* ]]; then
+        if [ -f "/etc/debian_version" ] || [ -f "/etc/lsb-release" ]; then
+            # Create keyrings directory if it doesn't exist
+            mkdir -p /etc/apt/keyrings
+            # Download and install GPG key
+            curl -fsSL "https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key" | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+            # Add repository
+            echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_${NODE_VERSION}.x nodistro main" > /etc/apt/sources.list.d/nodesource.list
+            # Update package list
+            apt-get update
+        else
+            print_error "Unsupported system. Please install Node.js ${NODE_VERSION} manually."
+        fi
     fi
 }
 
@@ -70,31 +99,26 @@ install_system_packages() {
 install_php() {
     print_status "Installing PHP ${PHP_VERSION} and extensions..."
     
-    # Install PHP and extensions
-    apt-get install -y \
+    # Install PHP and required extensions
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
         "php${PHP_VERSION}" \
         "php${PHP_VERSION}-fpm" \
         "php${PHP_VERSION}-cli" \
         "php${PHP_VERSION}-common" \
         "php${PHP_VERSION}-mysql" \
         "php${PHP_VERSION}-sqlite3" \
-        "php${PHP_VERSION}-pgsql" \
         "php${PHP_VERSION}-gd" \
         "php${PHP_VERSION}-curl" \
         "php${PHP_VERSION}-xml" \
         "php${PHP_VERSION}-zip" \
         "php${PHP_VERSION}-bcmath" \
         "php${PHP_VERSION}-intl" \
-        "php${PHP_VERSION}-readline" \
-        "php${PHP_VERSION}-ldap" \
-        "php${PHP_VERSION}-msgpack" \
-        "php${PHP_VERSION}-igbinary" \
-        "php${PHP_VERSION}-redis" \
-        "php${PHP_VERSION}-swoole" \
-        "php${PHP_VERSION}-memcached" \
-        "php${PHP_VERSION}-pcov" \
-        "php${PHP_VERSION}-xdebug" \
         "php${PHP_VERSION}-mbstring"
+        
+    # Try to install optional extensions
+    DEBIAN_FRONTEND=noninteractive apt-get install -y \
+        "php${PHP_VERSION}-redis" \
+        "php${PHP_VERSION}-memcached" || true
 
     # Configure PHP
     PHP_INI_PATH="/etc/php/${PHP_VERSION}/fpm/php.ini"
