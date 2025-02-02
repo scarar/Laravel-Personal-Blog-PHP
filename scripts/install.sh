@@ -277,11 +277,10 @@ sudo sed -i '/http {/a \tserver_names_hash_bucket_size 128;' /etc/nginx/nginx.co
         read -p "Path: " WEBSITE_PATH
         
         # Create Nginx configuration
-        cat <<EOL > "/etc/nginx/sites-available/$DOMAIN_NAME"
+        cat <<EOL > "/etc/nginx/sites-available/default"
 server {
     listen ${PORT_NUMBER:-80} default_server;
     listen [::]:${PORT_NUMBER:-80} default_server;
-    server_name $DOMAIN_NAME;
 
     root $WEBSITE_PATH/public;
     index index.php index.html index.htm;
@@ -292,7 +291,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
         include fastcgi_params;
     }
@@ -304,7 +303,7 @@ server {
 EOL
 
         # Enable the site
-        ln -sf "/etc/nginx/sites-available/$DOMAIN_NAME" "/etc/nginx/sites-enabled/"
+        ln -sf "/etc/nginx/sites-available/default" "/etc/nginx/sites-enabled/"
         
         # Test and restart Nginx
         nginx -t && systemctl restart nginx
