@@ -37,14 +37,14 @@ check_requirements() {
         sudo apt-get install -y software-properties-common
         sudo add-apt-repository -y ppa:ondrej/php
         sudo apt-get update
-        sudo apt-get install -y php8.2 php8.2-cli php8.2-fpm php8.2-common php8.2-mysql \
-            php8.2-zip php8.2-gd php8.2-mbstring php8.2-curl php8.2-xml php8.2-bcmath \
-            php8.2-sqlite3 unzip
+        sudo apt-get install -y php8.4 php8.4-cli php8.4-fpm php8.4-common php8.4-mysql \
+            php8.4-zip php8.4-gd php8.4-mbstring php8.4-curl php8.4-xml php8.4-bcmath \
+            php8.4-sqlite3 unzip
     fi
     
     PHP_VERSION=$(php -r "echo PHP_VERSION;")
-    if [[ "$PHP_VERSION" < "8.2" ]]; then
-        print_error "PHP version must be 8.2 or higher (current: $PHP_VERSION)"
+    if [[ "$PHP_VERSION" < "8.4" ]]; then
+        print_error "PHP version must be 8.4 or higher (current: $PHP_VERSION)"
     fi
     
     # Check Node.js
@@ -183,7 +183,7 @@ server {
     error_page 404 /index.php;
 
     location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php8.4-fpm.sock;
         fastcgi_param SCRIPT_FILENAME \$realpath_root\$fastcgi_script_name;
         include fastcgi_params;
         fastcgi_read_timeout 300;
@@ -229,7 +229,7 @@ EOF
     
     # Restart services
     print_status "Restarting services..."
-    systemctl restart php8.2-fpm
+    systemctl restart php8.4-fpm
     systemctl restart nginx
     
     print_success "Installation completed successfully!"
